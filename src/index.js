@@ -1,5 +1,3 @@
-// Load .env for local dev. Safe in all environments — dotenv never overwrites
-// vars already in process.env, so Railway's injected vars always take priority.
 require('dotenv').config();
 
 const express = require('express');
@@ -8,11 +6,8 @@ const helmet = require('helmet');
 
 const app = express();
 
-// Health check registered first — always responds 200 regardless of env vars.
-// This lets Railway's health check pass while we log any config issues below.
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-// Log env var status on startup (warning only, do not exit — let health check pass).
 const REQUIRED_ENV = [
   'SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
@@ -21,11 +16,10 @@ const REQUIRED_ENV = [
 ];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length > 0) {
-  console.warn('[CONFIG] Railway environment:', process.env.RAILWAY_ENVIRONMENT_NAME || '(not set)');
   console.warn('[CONFIG] Missing env vars (API calls will fail until fixed):', missing.join(', '));
   console.warn('[CONFIG] Env keys present:', Object.keys(process.env).join(', '));
 } else {
-  console.log('[CONFIG] All required env vars present. Railway environment:', process.env.RAILWAY_ENVIRONMENT_NAME || '(not set)');
+  console.log('[CONFIG] All required env vars present.');
 }
 
 const authRoutes = require('./routes/auth');

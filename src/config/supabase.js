@@ -30,15 +30,18 @@ function getSupabaseAuth() {
 // Proxy objects: behave exactly like the real clients but are created lazily.
 // Existing code that does `supabase.from(...)` or `supabaseAuth.auth.signIn(...)` 
 // works without any changes — calls are forwarded to the real client on first use.
-const supabase = new Proxy({}, {
-  get(_target, prop) {
-    return getSupabase()[prop];
-  },
-});
-
 const supabaseAuth = new Proxy({}, {
   get(_target, prop) {
     return getSupabaseAuth()[prop];
+  },
+});
+
+// supabaseAuth is a named export. The get trap handles it explicitly so it
+// isn't forwarded to getSupabase() (which would return undefined).
+const supabase = new Proxy({}, {
+  get(_target, prop) {
+    if (prop === 'supabaseAuth') return supabaseAuth;
+    return getSupabase()[prop];
   },
 });
 
