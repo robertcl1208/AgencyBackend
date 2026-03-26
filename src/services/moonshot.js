@@ -2,12 +2,22 @@ const OpenAI = require('openai');
 
 /**
  * Moonshot AI client (OpenAI-compatible API at api.moonshot.cn).
- * Used for both chat completions and embeddings.
+ * Lazy singleton — created on first use so a missing MOONSHOT_API_KEY at
+ * module load time does not crash the process before Express starts listening.
  */
-const moonshot = new OpenAI({
-  apiKey: process.env.MOONSHOT_API_KEY,
-  baseURL: 'https://api.moonshot.ai/v1',
-});
+let _moonshot = null;
+function getMoonshot() {
+  if (!_moonshot) {
+    if (!process.env.MOONSHOT_API_KEY) {
+      throw new Error('MOONSHOT_API_KEY env var is required');
+    }
+    _moonshot = new OpenAI({
+      apiKey: process.env.MOONSHOT_API_KEY,
+      baseURL: 'https://api.moonshot.ai/v1',
+    });
+  }
+  return _moonshot;
+}
 
 const CHAT_MODEL = 'moonshot-v1-128k';
 const EMBED_MODEL = 'moonshot-v1-embedding';
@@ -19,7 +29,7 @@ const EMBED_MODEL = 'moonshot-v1-embedding';
  * @returns {Promise<string>} assistant reply text
  */
 async function chat(messages, options = {}) {
-  const response = await moonshot.chat.completions.create({
+  const response = await getMoonshot().chat.completions.create({
     model: CHAT_MODEL,
     messages,
     temperature: 0.3,
@@ -35,7 +45,7 @@ async function chat(messages, options = {}) {
  * @returns {Promise<number[]>} embedding array
  */
 async function embed(text) {
-  const response = await moonshot.embeddings.create({
+  const response = await getMoonshot().embeddings.create({
     model: EMBED_MODEL,
     input: text,
   });
