@@ -1,5 +1,7 @@
-// Only load .env file in development; Railway injects vars directly in production
-if (process.env.NODE_ENV !== 'production') {
+// Local dev: load .env. Railway/Docker uses npm ci --omit=dev; skip dotenv when RAILWAY_* is set.
+const loadDotenv =
+  process.env.NODE_ENV !== 'production' && !process.env.RAILWAY_ENVIRONMENT;
+if (loadDotenv) {
   require('dotenv').config();
 }
 
