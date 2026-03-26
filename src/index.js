@@ -1,9 +1,6 @@
-// Local dev: load .env. Railway/Docker uses npm ci --omit=dev; skip dotenv when RAILWAY_* is set.
-const loadDotenv =
-  process.env.NODE_ENV !== 'production' && !process.env.RAILWAY_ENVIRONMENT;
-if (loadDotenv) {
-  require('dotenv').config();
-}
+// Load .env for local dev. Safe in all environments — dotenv never overwrites
+// vars already in process.env, so Railway's injected vars always take priority.
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
