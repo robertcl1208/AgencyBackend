@@ -1,125 +1,31 @@
-# Agency Chatbot Backend
+# AgencyBackend
 
-Node.js/Express REST API powering the chatbot system with Supabase PostgreSQL (pgvector) and Moonshot AI (Kimi).
+Node.js/Express API powering the RM Agency chatbot system.
 
-## Setup
+## Required environment variables
 
-### 1. Database
+These must be set on the **AgencyBackend service → Variables** tab in Railway (not on the project or as Shared Variables unless they are explicitly linked to this service):
 
-Run `src/db/schema.sql` in the **Supabase SQL Editor** (Dashboard → SQL Editor → New Query → paste & run).  
-This creates all tables, pgvector indexes, similarity search functions, and RLS policies.
+| Variable | Description |
+|---|---|
+| `SUPABASE_URL` | Your Supabase project URL, e.g. `https://xxxx.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role secret key (bypasses RLS) |
+| `SUPABASE_ANON_KEY` | Supabase anon/publishable key |
+| `MOONSHOT_API_KEY` | Moonshot AI API key |
+| `FRONTEND_URL` | Allowed CORS origin, e.g. `https://robertrmdev.com` |
+| `ADMIN_EMAIL` | Admin account email |
+| `ADMIN_PASSWORD` | Admin account password |
 
-### 2. Environment variables
+> **Note:** The app will exit on startup with a `[STARTUP] Missing required env vars` error if any of the first four are missing or empty. Check the Railway deployment logs and confirm the `[STARTUP] Railway environment:` line matches the environment where you set the variables.
 
-Copy `.env` and fill in the two missing values:
-
-```
-SUPABASE_SERVICE_ROLE_KEY=   # Supabase Dashboard → Project Settings → API → service_role
-MOONSHOT_API_KEY=            # https://platform.moonshot.cn → API Keys
-```
-
-### 3. Install dependencies
+## Local development
 
 ```bash
+cp .env.example .env   # fill in your values
 npm install
-```
-
-### 4. Seed the admin user
-
-```bash
-npm run seed
-```
-
-Creates `robertcl1208@gmail.com` with password `00000000` and role `admin`.
-
-### 5. Start the server
-
-```bash
-# development (auto-reload)
 npm run dev
-
-# production
-npm start
 ```
 
-Server runs on `http://localhost:4000`.
+## Deployment (Railway)
 
----
-
-## API Reference
-
-### Auth
-| Method | Path | Body | Description |
-|--------|------|------|-------------|
-| POST | `/api/auth/login` | `{email, password}` | Returns access_token, refresh_token, user |
-| POST | `/api/auth/logout` | — | Invalidates session |
-| GET | `/api/auth/me` | — | Returns current user |
-| POST | `/api/auth/refresh` | `{refresh_token}` | Returns new tokens |
-
-### Admin – Users (Bearer token, role=admin)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/admin/users` | List all users |
-| POST | `/api/admin/users` | Create user `{email, password, role}` |
-| PUT | `/api/admin/users/:id` | Update user |
-| DELETE | `/api/admin/users/:id` | Delete user |
-| GET | `/api/admin/users/:id/permissions` | Get profile permissions |
-| PUT | `/api/admin/users/:id/permissions` | Replace permissions `{profile_ids:[]}` |
-
-### Admin – Profiles (Bearer token, role=admin)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/admin/profiles` | List all profiles |
-| POST | `/api/admin/profiles` | Create profile `{name, description?, avatar_url?}` |
-| PUT | `/api/admin/profiles/:id` | Update profile |
-| DELETE | `/api/admin/profiles/:id` | Delete profile (cascades) |
-| GET | `/api/admin/profiles/:id/knowledge` | List knowledge items |
-| POST | `/api/admin/profiles/:id/knowledge` | Add knowledge `{content}` – auto-embeds |
-| DELETE | `/api/admin/profiles/:id/knowledge/:kid` | Delete knowledge item |
-| GET | `/api/admin/profiles/:id/memory` | List memory items |
-| DELETE | `/api/admin/profiles/:id/memory/:mid` | Delete memory item |
-| GET | `/api/admin/profiles/:id/users` | List users with access |
-
-### User (Bearer token)
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/profiles` | List accessible profiles |
-| GET | `/api/profiles/:id` | Get single profile |
-| POST | `/api/profiles/:id/sessions` | Create chat session |
-| GET | `/api/profiles/:id/sessions/:sid/messages` | Load chat history |
-| POST | `/api/profiles/:id/chat/message` | Send message `{message, session_id, suggested_answer?}` |
-| POST | `/api/profiles/:id/memory` | Save Q&A manually `{question, answer}` |
-
-### Chat message response types
-```json
-{ "type": "answer",       "content": "…" }
-{ "type": "no_info",      "content": "…", "askForSuggestion": true }
-{ "type": "not_related",  "content": "…", "askForSuggestion": true }
-{ "type": "memory_saved", "content": "…" }
-```
-
----
-
-## Architecture
-
-```
-Backend/
-├── src/
-│   ├── index.js               Express entry point
-│   ├── config/supabase.js     Service-role Supabase client
-│   ├── middleware/
-│   │   ├── auth.js            JWT verification → req.user
-│   │   └── adminOnly.js       Role guard
-│   ├── routes/
-│   │   ├── auth.js
-│   │   ├── admin/users.js
-│   │   ├── admin/profiles.js
-│   │   ├── user/profiles.js
-│   │   └── user/chat.js
-│   ├── services/
-│   │   ├── moonshot.js        Kimi chat + embeddings
-│   │   ├── embedding.js       Text chunking + embedding generation
-│   │   └── chatbot.js         RAG pipeline
-│   ├── db/schema.sql
-│   └── seed.js
-```
+Railway detects the `Dockerfile` automatically via `railway.toml`. Ensure all variables above are set on the service before deploying. The `/health` endpoint returns `{"status":"ok"}` when the service is running correctly.

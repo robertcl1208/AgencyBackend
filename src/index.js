@@ -14,6 +14,7 @@ const REQUIRED_ENV = [
 ];
 const missing = REQUIRED_ENV.filter(k => !process.env[k]);
 if (missing.length > 0) {
+  console.error('[STARTUP] Railway environment:', process.env.RAILWAY_ENVIRONMENT_NAME || '(not set)');
   console.error('[STARTUP] Missing required env vars:', missing.join(', '));
   console.error('[STARTUP] Env keys present:', Object.keys(process.env).join(', '));
   process.exit(1);
