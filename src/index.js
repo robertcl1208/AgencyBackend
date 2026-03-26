@@ -1,4 +1,21 @@
-require('dotenv').config();
+// Only load .env file in development; Railway injects vars directly in production
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
+
+// Validate required env vars on startup so missing vars fail fast with a clear message
+const REQUIRED_ENV = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SUPABASE_ANON_KEY',
+  'MOONSHOT_API_KEY',
+];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length > 0) {
+  console.error('[STARTUP] Missing required env vars:', missing.join(', '));
+  console.error('[STARTUP] Env keys present:', Object.keys(process.env).join(', '));
+  process.exit(1);
+}
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
